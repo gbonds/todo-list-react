@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { nanoid } from "nanoid";
 
 import Form from "./components/Form";
@@ -16,6 +16,15 @@ const FILTER_MAP = {
 const FILTER_NAMES = Object.keys(FILTER_MAP);
 // nb filter constants should be defined OUTSIDE of App function to prevent them from recalculating 
 // every time the App component re-renders. plus, info will never change.
+
+function usePrevious(value) {
+  const ref = useRef();
+  useEffect(() => {
+    ref.current = value;
+  });
+  return ref.current;
+}
+// TODO usePrevious is now being used in two files. move usePrevious to its own file and import it as needed
 
 function App(props) {
   const [tasks, setTasks] = useState(props.tasks);
@@ -87,6 +96,16 @@ function App(props) {
     />
   ));
 
+  // this code enables focus on list header if a task is deleted
+  const listHeadingRef = useRef(null);
+  const prevTaskLength = usePrevious(tasks.length);
+  useEffect(() => {
+    // if there are fewer tasks than before, focus on list heading
+    if (tasks.length - prevTaskLength === -1) {
+      listHeadingRef.current.focus();
+    }
+  }, [tasks.length, prevTaskLength]);
+
   return (
     <div className="todoapp stack-large">
       <h1>TodoMatic</h1>
@@ -94,7 +113,11 @@ function App(props) {
       <div className="filters btn-group stack-exception">
         {filterList}
       </div>
-      <h2 id="list-heading">
+      <h2
+        id="list-heading"
+        tabIndex="-1" /* this makes heading focusable via JavaScript */
+        ref={listHeadingRef}
+      >
         {listHeadingText}
       </h2>
       <ul
